@@ -816,6 +816,19 @@ nav a.active::after {
     -webkit-text-fill-color: transparent;
 }
 
+.dangerous {
+    color: #ff3366 !important;
+    text-shadow: 0 0 10px rgba(255, 51, 102, 0.4);
+}
+.suspicious {
+    color: #ffb800 !important;
+    text-shadow: 0 0 10px rgba(255, 184, 0, 0.4);
+}
+.safe {
+    color: #00ff9d !important;
+    text-shadow: 0 0 10px rgba(0, 255, 157, 0.4);
+}
+
 .inner-hero p {
     max-width: 620px;
     margin: 0 auto;

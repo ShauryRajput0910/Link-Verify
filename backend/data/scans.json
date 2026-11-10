@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1794310127332,
+    "url": "https://google.com",
+    "risk_score": 0,
+    "verdict": "UNVERIFIED",
+    "scan_time": "2026-11-10T11:28:47.332Z"
+  },
+  {
+    "id": 1794310120424,
+    "url": "https://viksitbharatrozgaryojana.org",
+    "risk_score": 100,
+    "verdict": "FAKE",
+    "scan_time": "2026-11-10T11:28:40.401Z"
+  }
+]

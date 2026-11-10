@@ -332,15 +332,20 @@ async function loadHistory() {
         const safeCount =
             scans.filter(
                 scan =>
-                    scan.verdict === "Safe"
+                    scan.verdict === "Safe" ||
+                    scan.verdict === "VERIFIED OFFICIAL" ||
+                    scan.verdict === "LOW RISK" ||
+                    (100 - Number(scan.risk_score)) >= 70
             ).length;
-
 
         const threatCount =
             scans.filter(
                 scan =>
                     scan.verdict === "Dangerous" ||
-                    scan.verdict === "Suspicious"
+                    scan.verdict === "Suspicious" ||
+                    scan.verdict === "SUSPICIOUS" ||
+                    scan.verdict === "FAKE" ||
+                    Number(scan.risk_score) >= 40
             ).length;
 
 
@@ -399,33 +404,22 @@ async function loadHistory() {
                     );
 
 
-                let verdictClass =
-                    "";
-
+                let verdictClass = "safe";
 
                 if (
-                    scan.verdict === "Dangerous"
+                    scan.verdict === "Dangerous" ||
+                    scan.verdict === "FAKE" ||
+                    Number(scan.risk_score) >= 60
                 ) {
-
-                    verdictClass =
-                        "dangerous";
-
-                }
-
-                else if (
-                    scan.verdict === "Suspicious"
+                    verdictClass = "dangerous";
+                } else if (
+                    scan.verdict === "Suspicious" ||
+                    scan.verdict === "SUSPICIOUS" ||
+                    Number(scan.risk_score) >= 30
                 ) {
-
-                    verdictClass =
-                        "suspicious";
-
-                }
-
-                else {
-
-                    verdictClass =
-                        "safe";
-
+                    verdictClass = "suspicious";
+                } else {
+                    verdictClass = "safe";
                 }
 
 

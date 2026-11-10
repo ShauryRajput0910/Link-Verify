@@ -1,10 +1,10 @@
 
 const express = require("express");
 const cors = require("cors");
-const mysql = require("mysql2");
 const path = require("path");
 require("dotenv").config();
 
+const db = require("./db");
 const analyzeURL = require("./analyzer");
 
 const app = express();
@@ -19,26 +19,6 @@ app.use(express.json());
 
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, "../frontend")));
-
-// ==========================================
-// MYSQL CONNECTION
-// ==========================================
-
-const db = mysql.createConnection({
-    host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "linkverify"
-});
-
-db.connect((err) => {
-    if (err) {
-        console.error("MySQL connection failed:", err.message);
-        return;
-    }
-
-    console.log("MySQL connected successfully!");
-});
 
 // ==========================================
 // HEALTH ROUTE
@@ -105,30 +85,23 @@ app.post("/api/scan", (req, res) => {
         : [];
 
     // ==========================================
-    // SAVE RESULT TO MYSQL
+    // SAVE RESULT TO DATABASE
     // ==========================================
 
-    const sql = `
-        INSERT INTO url_scans
-        (url, risk_score, verdict)
-        VALUES (?, ?, ?)
-    `;
-
-    db.query(
-        sql,
-        [cleanURL, riskScore, verdict],
-        (err, result) => {
-            if (err) {
-                console.warn("Database notice (running without DB persistence):", err.message);
-            }
-
+    db.saveScan(
+        {
+            url: cleanURL,
+            risk_score: riskScore,
+            verdict: verdict
+        },
+        (err, savedRecord) => {
             // ======================================
             // SEND RESULT TO FRONTEND
             // ======================================
 
             return res.json({
                 success: true,
-                id: result ? result.insertId : null,
+                id: savedRecord ? savedRecord.id : null,
                 url: analysis.normalizedURL || cleanURL,
                 originalURL: cleanURL,
                 didYouMean: analysis.didYouMean || null,
@@ -154,25 +127,19 @@ app.post("/api/scan", (req, res) => {
 // ==========================================
 
 app.get("/api/scans", (req, res) => {
-    const sql = `
-        SELECT *
-        FROM url_scans
-        ORDER BY scan_time DESC
-    `;
-
-    db.query(sql, (err, results) => {
+    db.getScans((err, scans) => {
         if (err) {
-            console.warn("Database notice:", err.message);
-
-            return res.json({
-                success: true,
-                scans: []
+            console.error("Database fetch error:", err.message);
+            return res.status(500).json({
+                success: false,
+                message: "Database error",
+                error: err.message
             });
         }
 
         res.json({
             success: true,
-            scans: results
+            scans: scans || []
         });
     });
 });
