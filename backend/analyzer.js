@@ -1,5 +1,5 @@
-
 const { URL } = require("url");
+const { cleanAndNormalizeURL, findDidYouMeanSuggestion } = require("./normalizer");
 
 // ==========================================
 // LINKVERIFY - URL ANALYSIS ENGINE
@@ -28,14 +28,11 @@ const officialWarnings = {
 };
 
 // Match an exact domain or a subdomain.
-// Do not match deceptive domains such as example.com.fake-site.com.
 function matchesDomain(hostname, domain) {
-    return hostname === domain ||
-        hostname.endsWith("." + domain);
+    return hostname === domain || hostname.endsWith("." + domain);
 }
 
 // Convert risk score into a display category.
-// Higher score = safer according to the project's scoring convention.
 function getRiskCategory(score) {
     if (score >= 80) return "Safe";
     if (score >= 60) return "Low Risk";
@@ -56,13 +53,16 @@ function analyzeURL(input) {
             };
         }
 
-        input = input.trim();
+        // 1. Smart Clean & Auto-Fix missing .com, typos, spaces, slashes
+        const normalized = cleanAndNormalizeURL(input);
+        const didYouMeanObj = normalized.didYouMean
+            ? {
+                suggestedURL: typeof normalized.didYouMean === "string" ? normalized.didYouMean : normalized.didYouMean.suggestedURL,
+                suggestedDomain: (typeof normalized.didYouMean === "string" ? normalized.didYouMean : normalized.didYouMean.suggestedURL).replace(/^https?:\/\//, "")
+              }
+            : findDidYouMeanSuggestion(normalized.hostname, input);
 
-        const normalizedInput = /^https?:\/\//i.test(input)
-            ? input
-            : "https://" + input;
-
-        const parsedURL = new URL(normalizedInput);
+        const parsedURL = new URL(normalized.cleanedURL);
 
         if (
             parsedURL.protocol !== "http:" &&
@@ -90,6 +90,16 @@ function analyzeURL(input) {
             };
         }
 
+        // Record any auto-fixes
+        if (normalized.autoFixed && normalized.fixMessages.length > 0) {
+            reasons.push("⚡ Auto-corrected: " + normalized.fixMessages.join(" "));
+        }
+
+        // Record "Did You Mean"
+        if (didYouMeanObj) {
+            reasons.push(`💡 Did you mean: ${didYouMeanObj.suggestedURL}?`);
+        }
+
         // ==========================================
         // 1. KNOWN FAKE DOMAIN CHECK
         // ==========================================
@@ -102,11 +112,17 @@ function analyzeURL(input) {
                     score: 0,
                     verdict: "FAKE",
                     domain: hostname,
+                    normalizedURL: normalized.cleanedURL,
+                    originalInput: input,
+                    autoFixed: normalized.autoFixed,
+                    didYouMean: didYouMeanObj ? didYouMeanObj.suggestedURL : null,
+                    didYouMeanDomain: didYouMeanObj ? didYouMeanObj.suggestedDomain : null,
                     reasons: [
                         "This domain matches LinkVerify's known-fake list.",
                         warning
                             ? "An official PIB warning is associated with this domain."
-                            : "This domain is listed for manual review."
+                            : "This domain is listed for manual review.",
+                        ...reasons
                     ],
                     officialSource: warning ? warning.source : null,
                     sourceURL: warning ? warning.reference : null
@@ -124,9 +140,15 @@ function analyzeURL(input) {
                     score: 100,
                     verdict: "VERIFIED OFFICIAL",
                     domain: hostname,
+                    normalizedURL: normalized.cleanedURL,
+                    originalInput: input,
+                    autoFixed: normalized.autoFixed,
+                    didYouMean: didYouMeanObj ? didYouMeanObj.suggestedURL : null,
+                    didYouMeanDomain: didYouMeanObj ? didYouMeanObj.suggestedDomain : null,
                     reasons: [
                         "The domain matches LinkVerify's manually approved official-domain list.",
-                        "This is a local allowlist match, not a live government database check."
+                        "This is a local allowlist match, not a live government database check.",
+                        ...reasons
                     ]
                 };
             }
@@ -136,12 +158,19 @@ function analyzeURL(input) {
         // 3. UNKNOWN WEBSITE RISK SCORING
         // ==========================================
 
-        // Begin with the highest possible safety score.
         let score = 100;
 
         if (parsedURL.protocol !== "https:") {
             score -= 20;
             reasons.push("HTTPS is not enabled.");
+        }
+
+        // Typosquatting penalty if user typed an impostor domain (e.g. amazn.com)
+        if (didYouMeanObj && hostname !== didYouMeanObj.suggestedDomain) {
+            score -= 30;
+            reasons.push(
+                `⚠ Potential Typosquatting / Impersonation Risk: This domain mimics ${didYouMeanObj.suggestedDomain}. Verify you are visiting the authentic portal.`
+            );
         }
 
         const suspiciousWords = [
@@ -193,15 +222,24 @@ function analyzeURL(input) {
             reasons.push("The URL contains an @ symbol.");
         }
 
-        // Keep score between 0 and 100.
         score = Math.max(0, Math.min(score, 100));
 
-        // Unknown websites must not automatically be declared safe.
+        let verdict = "UNVERIFIED";
+        if (score <= 40) {
+            verdict = "SUSPICIOUS";
+        }
+
         return {
             score: score,
-            verdict: "UNVERIFIED",
+            verdict: verdict,
             riskCategory: getRiskCategory(score),
             domain: hostname,
+            normalizedURL: normalized.cleanedURL,
+            originalInput: input,
+            autoFixed: normalized.autoFixed,
+            fixMessages: normalized.fixMessages,
+            didYouMean: didYouMeanObj ? didYouMeanObj.suggestedURL : null,
+            didYouMeanDomain: didYouMeanObj ? didYouMeanObj.suggestedDomain : null,
             reasons: [
                 ...reasons,
                 "The website has not been independently verified.",

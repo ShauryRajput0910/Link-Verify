@@ -53,12 +53,23 @@ async function verifyLink() {
         result.style.color = "#00ff9d";
         result.style.borderColor = "rgba(0,255,157,0.4)";
         result.style.background = "rgba(0,255,157,0.08)";
-        result.innerHTML = `✓ <strong>ANALYSIS VERIFIED:</strong> Verdict: <span style="font-weight:800;letter-spacing:1px;color:${data.verdict === 'FAKE' ? '#ff3366' : '#00ff9d'}">${data.verdict}</span>. Launching 3D Security Console...`;
 
-        // Open analysis page after brief cyber delay
+        let dymHTML = "";
+        if (data.didYouMean) {
+            dymHTML = `<div style="margin-top:6px; color:#00f0ff; font-size:13px;">💡 <strong>Did you mean:</strong> <span style="text-decoration:underline; font-weight:700;">${data.didYouMean}</span>?</div>`;
+        }
+
+        let fixHTML = "";
+        if (data.autoFixed && data.fixMessages && data.fixMessages.length > 0) {
+            fixHTML = `<div style="margin-top:4px; color:#94a3b8; font-size:11px;">⚡ Auto-fixed: ${data.fixMessages.join(" ")}</div>`;
+        }
+
+        result.innerHTML = `✓ <strong>ANALYSIS COMPLETE:</strong> Verdict: <span style="font-weight:800;letter-spacing:1px;color:${data.verdict === 'FAKE' ? '#ff3366' : '#00ff9d'}">${data.verdict}</span>.${dymHTML}${fixHTML}<div style="margin-top:6px;font-size:11px;color:#94a3b8;">Opening Security Analysis Console...</div>`;
+
+        // Open analysis page after brief delay
         setTimeout(function () {
             window.location.href = "analysis.html";
-        }, 850);
+        }, data.didYouMean ? 1400 : 850);
 
     } catch (error) {
         console.error("Backend Error:", error);

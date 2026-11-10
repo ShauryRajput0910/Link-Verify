@@ -129,14 +129,21 @@ app.post("/api/scan", (req, res) => {
             return res.json({
                 success: true,
                 id: result ? result.insertId : null,
-                url: cleanURL,
+                url: analysis.normalizedURL || cleanURL,
+                originalURL: cleanURL,
+                didYouMean: analysis.didYouMean || null,
+                didYouMeanDomain: analysis.didYouMeanDomain || null,
+                autoFixed: analysis.autoFixed || false,
+                fixMessages: analysis.fixMessages || [],
                 riskScore,
                 safetyScore: analysis.score,
                 verdict,
-                reasons,
+                reasons: analysis.reasons || reasons,
                 officialSource: analysis.officialSource || null,
                 sourceURL: analysis.sourceURL || null,
-                message: "URL analysis completed successfully."
+                message: analysis.didYouMean
+                    ? `Did you mean: ${analysis.didYouMean}?`
+                    : "URL analysis completed successfully."
             });
         }
     );

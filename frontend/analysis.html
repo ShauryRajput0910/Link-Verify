@@ -83,6 +83,23 @@
 
     </div>
 
+    <!-- DID YOU MEAN BOX -->
+    <div id="didYouMeanBox" style="display:none; margin: 20px 0 10px; padding: 14px 18px; background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.4); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 14px; box-shadow: 0 0 20px rgba(0,240,255,0.12);">
+        <div>
+            <span style="font-size:18px;">💡</span>
+            <strong style="color:var(--cyan); margin-left:6px; font-size:14px;">Did you mean this?</strong>
+            <p id="didYouMeanText" style="color:#f8fafc; margin-top:4px; font-family:var(--font-mono); font-size:14px;"></p>
+        </div>
+        <button id="didYouMeanBtn" type="button" style="background:linear-gradient(135deg, var(--cyan), var(--emerald)); color:#040814; border:none; padding:9px 18px; border-radius:6px; font-weight:800; cursor:pointer; font-family:inherit; white-space:nowrap; transition:transform 0.2s; box-shadow:0 0 12px rgba(0,240,255,0.4);">
+            Scan This Instead →
+        </button>
+    </div>
+
+    <!-- AUTO FIXED NOTICE -->
+    <div id="autoFixedNotice" style="display:none; margin: 10px 0; padding: 10px 16px; background: rgba(0,255,157,0.08); border: 1px solid rgba(0,255,157,0.3); border-radius: 8px; font-size: 13px; color: var(--text-muted);">
+        <span style="color:var(--emerald); font-weight:700;">⚡ Auto-Corrected:</span> <span id="autoFixedDetail"></span>
+    </div>
+
 
     <!-- SCORE -->
 
@@ -461,6 +478,44 @@ document.addEventListener("DOMContentLoaded", function () {
                 : "A secure HTTPS connection was not detected.";
         }
     });
+
+    // Show Did You Mean Suggestion if available
+    const didYouMeanBox = document.getElementById("didYouMeanBox");
+    const didYouMeanText = document.getElementById("didYouMeanText");
+    const didYouMeanBtn = document.getElementById("didYouMeanBtn");
+
+    if (data.didYouMean && didYouMeanBox && didYouMeanText) {
+        didYouMeanBox.style.display = "flex";
+        didYouMeanText.textContent = data.didYouMean;
+
+        if (didYouMeanBtn) {
+            didYouMeanBtn.onclick = async function () {
+                didYouMeanBtn.textContent = "Scanning...";
+                try {
+                    const resp = await fetch("/api/scan", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ url: data.didYouMean })
+                    });
+                    const newData = await resp.json();
+                    if (newData.success) {
+                        localStorage.setItem("scanResult", JSON.stringify(newData));
+                        window.location.reload();
+                    }
+                } catch (e) {
+                    console.error("Rescan failed", e);
+                }
+            };
+        }
+    }
+
+    // Show Auto-Fixed Notice if input was modified
+    const autoFixedNotice = document.getElementById("autoFixedNotice");
+    const autoFixedDetail = document.getElementById("autoFixedDetail");
+    if (data.autoFixed && data.fixMessages && data.fixMessages.length > 0 && autoFixedNotice && autoFixedDetail) {
+        autoFixedNotice.style.display = "block";
+        autoFixedDetail.textContent = data.fixMessages.join(" • ");
+    }
 
     console.log("Analysis displayed:", {
         verdict: label,
