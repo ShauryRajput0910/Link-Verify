@@ -1,10 +1,16 @@
 {
-  "name": "fraudsense",
+  "name": "link-verify",
   "version": "1.0.0",
+  "description": "3D Cyber Threat Intelligence & URL Verification Engine",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js"
+    "start": "node backend/server.js",
+    "build": "echo 'No build step required'"
   },
   "dependencies": {
-    "dotenv": "^17.4.2"
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mysql2": "^3.23.3"
   }
 }

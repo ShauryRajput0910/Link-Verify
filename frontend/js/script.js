@@ -28,7 +28,11 @@ async function verifyLink() {
     try {
         console.log("Sending URL to backend:", url);
 
-        const response = await fetch("http://localhost:5000/api/scan", {
+        const apiUrl = window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1")
+            ? "/api/scan"
+            : "/api/scan";
+
+        const response = await fetch(apiUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
