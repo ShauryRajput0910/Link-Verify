@@ -32,7 +32,7 @@ app.get("/api/health", (req, res) => {
 // SCAN URL API
 // ==========================================
 
-app.post("/api/scan", (req, res) => {
+app.post("/api/scan", async (req, res) => {
     const { url } = req.body;
 
     if (typeof url !== "string" || !url.trim()) {
@@ -45,10 +45,19 @@ app.post("/api/scan", (req, res) => {
     const cleanURL = url.trim();
 
     // ==========================================
-    // USE THE EXISTING ANALYZER
+    // USE THE MULTI-LAYER ANALYZER (AI ML + THREAT API)
     // ==========================================
 
-    const analysis = analyzeURL(cleanURL);
+    let analysis;
+    try {
+        analysis = await analyzeURL(cleanURL);
+    } catch (err) {
+        console.error("Analyzer error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Analysis engine failure: " + err.message
+        });
+    }
 
     // analyzer.js returns a score where a higher
     // score means lower risk for ordinary URLs.
@@ -64,16 +73,16 @@ app.post("/api/scan", (req, res) => {
     } else if (verdict === "VERIFIED OFFICIAL" ||
                verdict === "Verified Official") {
         verdict = "VERIFIED OFFICIAL";
-        riskScore = 100;
+        riskScore = 0;
     } else if (verdict === "Invalid URL") {
         verdict = "INVALID URL";
         riskScore = 0;
-    } else if (verdict === "Suspicious") {
+    } else if (verdict === "Suspicious" || verdict === "SUSPICIOUS") {
         verdict = "SUSPICIOUS";
-        riskScore = 0;
+        riskScore = 85;
     } else {
         // Unknown sites remain unverified.
-        verdict = "UNVERIFIED";
+        verdict = analysis.verdict || "UNVERIFIED";
 
         // Convert safety score to risk score for storage.
         const safetyScore = Number(analysis.score ?? 50);
@@ -111,9 +120,12 @@ app.post("/api/scan", (req, res) => {
                 riskScore,
                 safetyScore: analysis.score,
                 verdict,
+                riskCategory: analysis.riskCategory,
                 reasons: analysis.reasons || reasons,
                 officialSource: analysis.officialSource || null,
                 sourceURL: analysis.sourceURL || null,
+                mlAnalysis: analysis.mlAnalysis || null,
+                threatIntelligence: analysis.threatIntelligence || null,
                 message: analysis.didYouMean
                     ? `Did you mean: ${analysis.didYouMean}?`
                     : "URL analysis completed successfully."

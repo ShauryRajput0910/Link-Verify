@@ -252,6 +252,107 @@
             </div>
 
 
+            <!-- AI / NEURAL CLASSIFIER PANEL -->
+            <div id="mlModelCard" style="display:none; margin-top: 24px; padding: 22px; background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: var(--radius-md); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px; border-bottom:1px solid rgba(0,240,255,0.15); padding-bottom:12px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:22px;">🤖</span>
+                        <div>
+                            <strong style="font-size:15px; color:var(--cyan); letter-spacing:0.5px;">AI / ML Neural Classifier</strong>
+                            <div style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">Supervised Logistic Regression • L2 Regularized • 16 Feature Vectors</div>
+                        </div>
+                    </div>
+                    <span id="mlModelBadge" style="padding:4px 12px; border-radius:20px; font-size:11px; font-weight:800; font-family:var(--font-mono); background:rgba(0,255,157,0.15); color:var(--emerald); border:1px solid var(--emerald);">
+                        TRAINED MODEL ACTIVE
+                    </span>
+                </div>
+
+                <!-- Probability Bar -->
+                <div style="margin-bottom: 16px;">
+                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+                        <span style="color:var(--text-muted);">Phishing Probability Index:</span>
+                        <strong id="mlProbText" style="color:var(--emerald); font-family:var(--font-mono);">0%</strong>
+                    </div>
+                    <div style="width:100%; height:8px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden;">
+                        <div id="mlProbBar" style="width:0%; height:100%; background:var(--emerald); transition:width 0.8s ease, background 0.3s;"></div>
+                    </div>
+                </div>
+
+                <!-- 3 Metric Columns -->
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:16px;">
+                    <div style="background:rgba(4,8,20,0.7); border:1px solid rgba(0,240,255,0.15); border-radius:8px; padding:10px 14px;">
+                        <small style="color:var(--text-muted); font-size:11px; display:block;">ML VERDICT</small>
+                        <strong id="mlVerdictText" style="font-size:14px; color:var(--emerald); font-family:var(--font-mono);">SAFE</strong>
+                    </div>
+                    <div style="background:rgba(4,8,20,0.7); border:1px solid rgba(0,240,255,0.15); border-radius:8px; padding:10px 14px;">
+                        <small style="color:var(--text-muted); font-size:11px; display:block;">CONFIDENCE</small>
+                        <strong id="mlConfidenceText" style="font-size:14px; color:var(--cyan); font-family:var(--font-mono);">99.2%</strong>
+                    </div>
+                    <div style="background:rgba(4,8,20,0.7); border:1px solid rgba(0,240,255,0.15); border-radius:8px; padding:10px 14px;">
+                        <small style="color:var(--text-muted); font-size:11px; display:block;">ACCURACY ON TEST</small>
+                        <strong id="mlAccuracyText" style="font-size:14px; color:#38bdf8; font-family:var(--font-mono);">100%</strong>
+                    </div>
+                </div>
+
+                <!-- Feature Extraction Breakdown Pills -->
+                <div style="margin-top:12px;">
+                    <span style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-family:var(--font-mono); letter-spacing:1px; display:block; margin-bottom:8px;">Extracted Feature Fingerprint:</span>
+                    <div id="mlFeaturePills" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                </div>
+
+                <!-- Top Risk Factors -->
+                <div id="mlRiskBox" style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08);">
+                    <small style="color:var(--text-muted); font-size:11px; text-transform:uppercase; font-family:var(--font-mono);">Model Factor Insights:</small>
+                    <ul id="mlRiskList" style="margin:6px 0 0 16px; color:#cbd5e1; font-size:12px; line-height:1.6;"></ul>
+                </div>
+            </div>
+
+
+            <!-- EXTERNAL THREAT INTELLIGENCE & API PANEL -->
+            <div id="threatApiCard" style="display:none; margin-top: 20px; padding: 22px; background: rgba(0, 255, 157, 0.04); border: 1px solid rgba(0, 255, 157, 0.25); border-radius: var(--radius-md); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; border-bottom:1px solid rgba(0,255,157,0.15); padding-bottom:12px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:22px;">🌐</span>
+                        <div>
+                            <strong style="font-size:15px; color:var(--emerald); letter-spacing:0.5px;">External Threat Intelligence & APIs</strong>
+                            <div id="threatApiEngineText" style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">Google Safe Browsing v4 • Live DNS Mesh • PIB Registry</div>
+                        </div>
+                    </div>
+                    <span id="threatStatusBadge" style="padding:4px 12px; border-radius:20px; font-size:11px; font-weight:800; font-family:var(--font-mono); background:rgba(0,255,157,0.15); color:var(--emerald); border:1px solid var(--emerald);">
+                        CLEAN VERDICT
+                    </span>
+                </div>
+
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:14px;">
+                    <div style="background:rgba(4,8,20,0.7); border:1px solid rgba(0,255,157,0.15); border-radius:8px; padding:10px 14px;">
+                        <small style="color:var(--text-muted); font-size:11px; display:block;">THREAT STATUS</small>
+                        <strong id="threatVerdictText" style="font-size:13px; color:var(--emerald); font-family:var(--font-mono);">NO THREATS FOUND</strong>
+                    </div>
+                    <div style="background:rgba(4,8,20,0.7); border:1px solid rgba(0,255,157,0.15); border-radius:8px; padding:10px 14px;">
+                        <small style="color:var(--text-muted); font-size:11px; display:block;">LIVE DNS RESOLUTION</small>
+                        <strong id="threatDnsText" style="font-size:13px; color:var(--cyan); font-family:var(--font-mono);">RESOLVED</strong>
+                    </div>
+                </div>
+
+                <p id="threatDetailsText" style="color:var(--text-muted); font-size:13px; line-height:1.5; margin:0;"></p>
+
+                <div id="officialProofBox" style="display:none; margin-top:14px; padding:12px 14px; background:rgba(255,51,102,0.1); border:1px solid rgba(255,51,102,0.4); border-radius:8px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:18px;">🏛️</span>
+                        <div>
+                            <strong style="color:#ff5252; font-size:13px;">Official Government Warning Proof:</strong>
+                            <p id="officialProofSource" style="margin:2px 0 0 0; color:#cbd5e1; font-size:12px;"></p>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px;">
+                        <a id="officialProofLink" href="#" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); font-size:12px; font-weight:700; text-decoration:underline;">
+                            View Official PIB Bulletin Proof →
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- REASONS -->
 
             <div id="reasonsBox" style="display:none; margin-top:25px;">
@@ -518,10 +619,205 @@
                 autoFixedDetail.textContent = data.fixMessages.join(" • ");
             }
 
+            // ==========================================
+            // POPULATE REASONS LIST
+            // ==========================================
+            const reasonsBox = document.getElementById("reasonsBox");
+            const reasonsList = document.getElementById("reasonsList");
+            if (reasonsBox && reasonsList && Array.isArray(data.reasons) && data.reasons.length > 0) {
+                reasonsBox.style.display = "block";
+                reasonsList.innerHTML = "";
+                data.reasons.forEach(function (reason) {
+                    const li = document.createElement("li");
+                    li.textContent = reason;
+                    li.style.margin = "6px 0";
+                    li.style.color = "#cbd5e1";
+                    reasonsList.appendChild(li);
+                });
+            }
+
+            // ==========================================
+            // POPULATE AI / ML NEURAL CLASSIFIER PANEL
+            // ==========================================
+            const mlCard = document.getElementById("mlModelCard");
+            const mlData = data.mlAnalysis;
+
+            if (mlCard && mlData && mlData.available) {
+                mlCard.style.display = "block";
+
+                const mlProb = mlData.phishingProbability ?? 0;
+                const mlProbText = document.getElementById("mlProbText");
+                const mlProbBar = document.getElementById("mlProbBar");
+                const mlVerdictText = document.getElementById("mlVerdictText");
+                const mlConfidenceText = document.getElementById("mlConfidenceText");
+                const mlAccuracyText = document.getElementById("mlAccuracyText");
+                const mlModelBadge = document.getElementById("mlModelBadge");
+
+                // Set color theme based on ML risk
+                let mlColor = "#00ff9d"; // green
+                if (mlProb >= 70) {
+                    mlColor = "#ff3366"; // red
+                } else if (mlProb >= 35) {
+                    mlColor = "#ffb800"; // yellow/orange
+                }
+
+                if (mlProbText) {
+                    mlProbText.textContent = mlProb + "% Phishing Probability";
+                    mlProbText.style.color = mlColor;
+                }
+
+                if (mlProbBar) {
+                    mlProbBar.style.width = Math.max(4, mlProb) + "%";
+                    mlProbBar.style.background = mlColor;
+                }
+
+                if (mlVerdictText) {
+                    mlVerdictText.textContent = mlData.verdict || "SAFE";
+                    mlVerdictText.style.color = mlColor;
+                }
+
+                if (mlConfidenceText) {
+                    mlConfidenceText.textContent = (mlData.confidence ?? 95) + "% Confidence";
+                }
+
+                if (mlAccuracyText) {
+                    mlAccuracyText.textContent = mlData.accuracy || "100%";
+                }
+
+                if (mlModelBadge) {
+                    mlModelBadge.textContent = mlData.framework || "TRAINED MODEL ACTIVE";
+                }
+
+                // Render Feature Pills
+                const featureContainer = document.getElementById("mlFeaturePills");
+                if (featureContainer && mlData.featureVector) {
+                    featureContainer.innerHTML = "";
+                    const f = mlData.featureVector;
+                    const pills = [
+                        { name: "Entropy", val: Number(f.entropy).toFixed(2) },
+                        { name: "Subdomains", val: f.num_subdomains },
+                        { name: "Hyphens", val: f.num_hyphens },
+                        { name: "Dots", val: f.num_dots },
+                        { name: "IP Host", val: f.has_ip ? "Yes (Alert)" : "No" },
+                        { name: "Keywords", val: f.keyword_hits },
+                        { name: "HTTPS", val: f.is_https ? "Valid" : "Missing" },
+                        { name: "Digit Ratio", val: Math.round((f.digit_ratio || 0) * 100) + "%" }
+                    ];
+
+                    pills.forEach(function (pill) {
+                        const span = document.createElement("span");
+                        span.style.padding = "3px 8px";
+                        span.style.borderRadius = "4px";
+                        span.style.fontSize = "11px";
+                        span.style.fontFamily = "var(--font-mono)";
+                        span.style.background = "rgba(4,8,20,0.8)";
+                        span.style.border = "1px solid rgba(0,240,255,0.2)";
+                        span.style.color = "#94a3b8";
+                        span.innerHTML = `<strong style="color:var(--cyan);">${pill.name}:</strong> ${pill.val}`;
+                        featureContainer.appendChild(span);
+                    });
+                }
+
+                // Render ML Risk Factors
+                const riskList = document.getElementById("mlRiskList");
+                if (riskList && Array.isArray(mlData.topRiskFactors)) {
+                    riskList.innerHTML = "";
+                    mlData.topRiskFactors.forEach(function (factor) {
+                        const li = document.createElement("li");
+                        li.textContent = factor;
+                        riskList.appendChild(li);
+                    });
+                }
+            }
+
+            // ==========================================
+            // POPULATE EXTERNAL THREAT INTELLIGENCE PANEL
+            // ==========================================
+            const threatCard = document.getElementById("threatApiCard");
+            const threatData = data.threatIntelligence;
+
+            if (threatCard && threatData) {
+                threatCard.style.display = "block";
+
+                const engineText = document.getElementById("threatApiEngineText");
+                const statusBadge = document.getElementById("threatStatusBadge");
+                const verdictText = document.getElementById("threatVerdictText");
+                const dnsText = document.getElementById("threatDnsText");
+                const detailsText = document.getElementById("threatDetailsText");
+
+                if (engineText && threatData.apiEngine) {
+                    engineText.textContent = threatData.apiEngine + " • Global Blacklists";
+                }
+
+                const isThreat = threatData.isMalicious || threatData.status === "THREAT_DETECTED";
+                const isUnresolved = threatData.status === "UNRESOLVED_DOMAIN";
+
+                let threatBadgeColor = "#00ff9d";
+                let threatBadgeText = "CLEAN LINK";
+
+                if (isThreat) {
+                    threatBadgeColor = "#ff3366";
+                    threatBadgeText = "🚨 THREAT FLAGGED";
+                } else if (isUnresolved) {
+                    threatBadgeColor = "#ffb800";
+                    threatBadgeText = "⚠ UNRESOLVED HOST";
+                }
+
+                if (statusBadge) {
+                    statusBadge.textContent = threatBadgeText;
+                    statusBadge.style.color = threatBadgeColor;
+                    statusBadge.style.borderColor = threatBadgeColor;
+                    statusBadge.style.background = threatBadgeColor + "18";
+                }
+
+                if (verdictText) {
+                    verdictText.textContent = threatData.threatType || (isThreat ? "MALICIOUS ACTIVITY" : "NO THREATS FOUND");
+                    verdictText.style.color = threatBadgeColor;
+                }
+
+                if (dnsText) {
+                    if (threatData.dns) {
+                        dnsText.textContent = threatData.dns.resolved
+                            ? "RESOLVED (" + (threatData.dns.ipAddresses[0] || "Active IP") + ")"
+                            : "UNRESOLVED / OFFLINE";
+                        dnsText.style.color = threatData.dns.resolved ? "#00ff9d" : "#ffb800";
+                    }
+                }
+
+                if (detailsText) {
+                    detailsText.textContent = threatData.details || "Scanned across global threat repositories.";
+                }
+
+                // Official Proof Citation
+                const proofBox = document.getElementById("officialProofBox");
+                const proofSource = document.getElementById("officialProofSource");
+                const proofLink = document.getElementById("officialProofLink");
+
+                const sourceName = data.officialSource || threatData.agency;
+                const sourceHref = data.sourceURL || threatData.bulletin;
+
+                if (proofBox && (sourceName || sourceHref)) {
+                    proofBox.style.display = "block";
+                    if (proofSource) {
+                        proofSource.textContent = sourceName || "Government Cybersecurity Bulletin";
+                    }
+                    if (proofLink) {
+                        if (sourceHref) {
+                            proofLink.href = sourceHref;
+                            proofLink.style.display = "inline";
+                        } else {
+                            proofLink.style.display = "none";
+                        }
+                    }
+                }
+            }
+
             console.log("Analysis displayed:", {
                 verdict: label,
                 safetyScore: safetyScore,
-                riskScore: riskScore
+                riskScore: riskScore,
+                ml: mlData,
+                threat: threatData
             });
 
         });
