@@ -387,8 +387,8 @@ function findDidYouMeanSuggestion(hostname, originalRaw) {
 
         // Substring / Missing character match (e.g. 'amazn' inside 'amazon')
         const isCloseBase = (baseDist <= 2 && Math.abs(hostBase.length - legitBase.length) <= 2) ||
-                           (legitBase.includes(hostBase) && hostBase.length >= 4) ||
-                           (hostBase.includes(legitBase) && Math.abs(hostBase.length - legitBase.length) <= 2);
+            (legitBase.includes(hostBase) && hostBase.length >= 4) ||
+            (hostBase.includes(legitBase) && Math.abs(hostBase.length - legitBase.length) <= 2);
 
         if (isCloseBase && (fullDist <= 3 || baseDist <= 2)) {
             const totalScore = baseDist * 2 + (hostTLD === legitTLD ? 0 : 1);
