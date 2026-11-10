@@ -1,5 +1,4 @@
 async function verifyLink() {
-
     const input = document.getElementById("urlInput");
     const result = document.getElementById("quickResult");
 
@@ -11,150 +10,85 @@ async function verifyLink() {
     const url = input.value.trim();
 
     if (url === "") {
-
         result.style.display = "block";
-        result.style.color = "#ffb84d";
-        result.style.borderColor = "rgba(255,184,77,0.3)";
-
-        result.innerHTML =
-            "⚠ Please enter a URL before verification.";
-
+        result.style.color = "#ffb800";
+        result.style.borderColor = "rgba(255,184,0,0.4)";
+        result.style.background = "rgba(255,184,0,0.08)";
+        result.innerHTML = "⚠ <strong>INPUT REQUIRED:</strong> Please enter or paste a URL to verify.";
         return;
     }
 
-
-    // Show analyzing message
-
+    // Show cyber analyzing message
     result.style.display = "block";
-    result.style.color = "#37ff9b";
-    result.style.borderColor = "rgba(55,255,155,0.25)";
-
-    result.innerHTML =
-        "◌ Analyzing URL...";
-
+    result.style.color = "#00f0ff";
+    result.style.borderColor = "rgba(0,240,255,0.4)";
+    result.style.background = "rgba(0,240,255,0.08)";
+    result.innerHTML = "⚡ <strong>CYBER RADAR ACTIVE:</strong> Deconstructing URL heuristics & querying PIB threat registry...";
 
     try {
-
         console.log("Sending URL to backend:", url);
 
-
-        const response = await fetch(
-            "http://localhost:5000/api/scan",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    url: url
-                })
-            }
-        );
-
+        const response = await fetch("http://localhost:5000/api/scan", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ url: url })
+        });
 
         const data = await response.json();
-
         console.log("Backend response:", data);
 
-
         if (!response.ok) {
-
-            throw new Error(
-                data.message || "Scan failed"
-            );
-
+            throw new Error(data.message || "Scan failed");
         }
-
 
         // Save backend result
+        localStorage.setItem("scanResult", JSON.stringify(data));
 
-        localStorage.setItem(
-            "scanResult",
-            JSON.stringify(data)
-        );
+        result.style.color = "#00ff9d";
+        result.style.borderColor = "rgba(0,255,157,0.4)";
+        result.style.background = "rgba(0,255,157,0.08)";
+        result.innerHTML = `✓ <strong>ANALYSIS VERIFIED:</strong> Verdict: <span style="font-weight:800;letter-spacing:1px;color:${data.verdict === 'FAKE' ? '#ff3366' : '#00ff9d'}">${data.verdict}</span>. Launching 3D Security Console...`;
 
-
-        result.style.color = "#37ff9b";
-        result.style.borderColor =
-            "rgba(55,255,155,0.25)";
-
-        result.innerHTML =
-            "✓ Analysis completed. Opening security analysis...";
-
-
-        // Open analysis page
-
+        // Open analysis page after brief cyber delay
         setTimeout(function () {
-
             window.location.href = "analysis.html";
-
-        }, 700);
-
+        }, 850);
 
     } catch (error) {
+        console.error("Backend Error:", error);
 
-        console.error(
-            "Backend Error:",
-            error
-        );
-
-
-        result.style.color = "#ff6b6b";
-
-        result.style.borderColor =
-            "rgba(255,107,107,0.3)";
-
-        result.innerHTML =
-            "✕ Backend connection failed. Make sure the server is running.";
-
+        result.style.color = "#ff3366";
+        result.style.borderColor = "rgba(255,51,102,0.4)";
+        result.style.background = "rgba(255,51,102,0.08)";
+        result.innerHTML = "✕ <strong>BACKEND OFFLINE:</strong> Could not connect to http://localhost:5000/api/scan.";
     }
-
 }
 
-
 /* =========================================
-   LOAD RESULT ON ANALYSIS PAGE
+   DOM LOAD EVENTS
 ========================================= */
-
-window.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        const analysisURL =
-            document.getElementById("analysisURL");
-
-
-        if (analysisURL) {
-
-            const savedResult =
-                localStorage.getItem("scanResult");
-
-
-            if (savedResult) {
-
-                try {
-
-                    const data =
-                        JSON.parse(savedResult);
-
-
-                    analysisURL.textContent =
-                        data.url || "Unknown URL";
-
-                } catch (error) {
-
-                    console.error(
-                        "Error reading scan result:",
-                        error
-                    );
-
-                }
-
+window.addEventListener("DOMContentLoaded", function () {
+    const input = document.getElementById("urlInput");
+    if (input) {
+        input.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                verifyLink();
             }
-
-        }
-
+        });
     }
-);
+
+    const analysisURL = document.getElementById("analysisURL");
+    if (analysisURL) {
+        const savedResult = localStorage.getItem("scanResult");
+        if (savedResult) {
+            try {
+                const data = JSON.parse(savedResult);
+                analysisURL.textContent = data.url || "Unknown URL";
+            } catch (error) {
+                console.error("Error reading scan result:", error);
+            }
+        }
+    }
+});
