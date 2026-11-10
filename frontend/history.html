@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+```
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Scan History | LINKVERIFY</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet">
+```
+
+</head>
+
+<body>
+
+<header class="navbar">
+
+```
+<a href="index.html" class="logo">
+
+    <span class="logo-icon">✓</span>
+    LINK<span>VERIFY</span>
+
+</a>
+
+<nav>
+
+    <a href="index.html">Home</a>
+
+    <a href="how-it-works.html">
+        How It Works
+    </a>
+
+    <a href="threats.html">
+        Threat Detection
+    </a>
+
+    <a href="features.html">
+        Features
+    </a>
+
+    <a href="history.html" class="active">
+        Scan History
+    </a>
+
+    <a href="about.html">
+        About
+    </a>
+
+</nav>
+```
+
+</header>
+
+<div class="page-background"></div>
+
+<section class="analysis-page">
+
+```
+<div class="status-pill">
+
+    <span class="status-dot"></span>
+
+    SCAN HISTORY
+
+</div>
+
+
+<h1>
+
+    Scan
+    <span>History.</span>
+
+</h1>
+
+
+<p style="text-align:center; margin-bottom:35px;">
+
+    View previously analyzed URLs and their security results.
+
+</p>
+
+
+<div class="analysis-main">
+
+
+    <!-- SUMMARY -->
+
+    <div style="
+        display:flex;
+        gap:20px;
+        flex-wrap:wrap;
+        margin-bottom:30px;
+    ">
+
+
+        <div class="check" style="flex:1;">
+
+            <span>◉</span>
+
+            <div>
+
+                <b>Total Scans</b>
+
+                <small>
+                    URLs analyzed
+                </small>
+
+            </div>
+
+            <strong id="totalScans">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="check" style="flex:1;">
+
+            <span>✓</span>
+
+            <div>
+
+                <b>Safe</b>
+
+                <small>
+                    Low risk URLs
+                </small>
+
+            </div>
+
+            <strong id="safeScans">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="check" style="flex:1;">
+
+            <span>!</span>
+
+            <div>
+
+                <b>Threats</b>
+
+                <small>
+                    Suspicious/Dangerous
+                </small>
+
+            </div>
+
+            <strong id="dangerScans">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <!-- TABLE -->
+
+    <div style="overflow-x:auto;">
+
+        <table style="
+            width:100%;
+            border-collapse:collapse;
+            text-align:left;
+        ">
+
+            <thead>
+
+                <tr>
+
+                    <th style="padding:15px;">
+                        #
+                    </th>
+
+                    <th style="padding:15px;">
+                        URL
+                    </th>
+
+                    <th style="padding:15px;">
+                        RISK
+                    </th>
+
+                    <th style="padding:15px;">
+                        SECURITY
+                    </th>
+
+                    <th style="padding:15px;">
+                        VERDICT
+                    </th>
+
+                    <th style="padding:15px;">
+                        DATE
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="historyTable">
+
+                <tr>
+
+                    <td colspan="6"
+                        style="padding:30px; text-align:center;">
+
+                        Loading scan history...
+
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div id="errorMessage"
+         style="
+            display:none;
+            margin-top:25px;
+            text-align:center;
+         ">
+
+        Unable to load scan history.
+
+    </div>
+
+
+    <div style="text-align:center; margin-top:30px;">
+
+        <a href="index.html"
+           class="back-button">
+
+            ← Scan Another Link
+
+        </a>
+
+    </div>
+
+
+</div>
+```
+
+</section>
+
+<footer>
+
+```
+<div class="footer-logo">
+
+    LINK<span>VERIFY</span>
+
+</div>
+
+<p class="copyright">
+
+    © 2026 LINKVERIFY.
+
+</p>
+```
+
+</footer>
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    loadHistory
+);
+
+
+async function loadHistory() {
+
+    const table =
+        document.getElementById(
+            "historyTable"
+        );
+
+    const errorMessage =
+        document.getElementById(
+            "errorMessage"
+        );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "http://localhost:5000/api/scans"
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok || !data.success) {
+
+            throw new Error(
+                "Failed to load scan history"
+            );
+
+        }
+
+
+        const scans =
+            data.scans || [];
+
+
+        // ==============================
+        // SUMMARY
+        // ==============================
+
+        document.getElementById(
+            "totalScans"
+        ).textContent =
+            scans.length;
+
+
+        const safeCount =
+            scans.filter(
+                scan =>
+                    scan.verdict === "Safe"
+            ).length;
+
+
+        const threatCount =
+            scans.filter(
+                scan =>
+                    scan.verdict === "Dangerous" ||
+                    scan.verdict === "Suspicious"
+            ).length;
+
+
+        document.getElementById(
+            "safeScans"
+        ).textContent =
+            safeCount;
+
+
+        document.getElementById(
+            "dangerScans"
+        ).textContent =
+            threatCount;
+
+
+        // ==============================
+        // EMPTY DATABASE
+        // ==============================
+
+        if (scans.length === 0) {
+
+            table.innerHTML = `
+
+                <tr>
+
+                    <td colspan="6"
+                        style="padding:30px;text-align:center;">
+
+                        No scans found.
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+
+        }
+
+
+        // ==============================
+        // TABLE
+        // ==============================
+
+        table.innerHTML = "";
+
+
+        scans.forEach(
+            (scan, index) => {
+
+                const securityScore =
+                    Math.max(
+                        0,
+                        100 - Number(scan.risk_score)
+                    );
+
+
+                let verdictClass =
+                    "";
+
+
+                if (
+                    scan.verdict === "Dangerous"
+                ) {
+
+                    verdictClass =
+                        "dangerous";
+
+                }
+
+                else if (
+                    scan.verdict === "Suspicious"
+                ) {
+
+                    verdictClass =
+                        "suspicious";
+
+                }
+
+                else {
+
+                    verdictClass =
+                        "safe";
+
+                }
+
+
+                const date =
+                    new Date(
+                        scan.scan_time
+                    );
+
+
+                const formattedDate =
+                    date.toLocaleString(
+                        "en-IN",
+                        {
+                            dateStyle: "medium",
+                            timeStyle: "short"
+                        }
+                    );
+
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                row.innerHTML = `
+
+                    <td style="padding:15px;">
+                        ${index + 1}
+                    </td>
+
+                    <td style="
+                        padding:15px;
+                        max-width:350px;
+                        word-break:break-all;
+                    ">
+                        ${escapeHTML(scan.url)}
+                    </td>
+
+                    <td style="padding:15px;">
+                        ${scan.risk_score}
+                    </td>
+
+                    <td style="padding:15px;">
+                        ${securityScore}/100
+                    </td>
+
+                    <td style="padding:15px;">
+                        <strong class="${verdictClass}">
+                            ${scan.verdict.toUpperCase()}
+                        </strong>
+                    </td>
+
+                    <td style="
+                        padding:15px;
+                        white-space:nowrap;
+                    ">
+                        ${formattedDate}
+                    </td>
+
+                `;
+
+
+                table.appendChild(row);
+
+            }
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "History Error:",
+            error
+        );
+
+
+        table.innerHTML = "";
+
+        errorMessage.style.display =
+            "block";
+
+    }
+
+}
+
+
+// ==============================
+// SECURITY HELPER
+// ==============================
+
+function escapeHTML(text) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        text;
+
+    return div.innerHTML;
+
+}
+
+</script>
+
+</body>
+
+</html>

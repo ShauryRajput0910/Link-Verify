@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+```
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Security Analysis | LINKVERIFY</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet">
+```
+
+</head>
+
+<body>
+
+<header class="navbar">
+
+```
+<a href="index.html" class="logo">
+
+    <span class="logo-icon">✓</span>
+    LINK<span>VERIFY</span>
+
+</a>
+
+<nav>
+
+    <a href="index.html">Home</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="threats.html">Threat Detection</a>
+    <a href="features.html">Features</a>
+    <a href="history.html">Scan History</a>
+    <a href="about.html">About</a>
+
+</nav>
+```
+
+</header>
+
+<div class="page-background"></div>
+
+<section class="analysis-page">
+
+```
+<div class="status-pill">
+    <span class="status-dot"></span>
+    SECURITY ANALYSIS
+</div>
+
+<h1>
+    Link
+    <span>Intelligence.</span>
+</h1>
+
+
+<div class="analysis-main">
+
+
+    <!-- URL + VERDICT -->
+
+    <div class="analysis-top">
+
+        <div>
+
+            <small>
+                ANALYZED URL
+            </small>
+
+            <h2 id="analysisURL">
+                Analyzing...
+            </h2>
+
+        </div>
+
+        <div class="result-badge" id="resultBadge">
+            ✓ SAFE
+        </div>
+
+    </div>
+
+
+    <!-- SCORE -->
+
+    <div class="score-section">
+
+        <div class="score-circle">
+
+            <div>
+
+                <strong id="score">
+                    0
+                </strong>
+
+                <span>
+                    /100
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div>
+
+            <small>
+                SECURITY SCORE
+            </small>
+
+            <h3 id="riskTitle">
+                Analyzing Risk...
+            </h3>
+
+            <p id="riskDescription">
+                The submitted URL is being analyzed.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- CHECKS -->
+
+    <div class="checks">
+
+
+        <!-- DOMAIN -->
+
+        <div class="check">
+
+            <span id="domainIcon">✓</span>
+
+            <div>
+
+                <b>
+                    Domain Structure
+                </b>
+
+                <small id="domainText">
+                    Checking domain structure...
+                </small>
+
+            </div>
+
+            <strong id="domainStatus">
+                CHECKING
+            </strong>
+
+        </div>
+
+
+        <!-- HTTPS -->
+
+        <div class="check">
+
+            <span id="httpsIcon">✓</span>
+
+            <div>
+
+                <b>
+                    HTTPS
+                </b>
+
+                <small id="httpsText">
+                    Checking protocol...
+                </small>
+
+            </div>
+
+            <strong id="httpsStatus">
+                CHECKING
+            </strong>
+
+        </div>
+
+
+        <!-- KEYWORDS -->
+
+        <div class="check">
+
+            <span id="keywordIcon">✓</span>
+
+            <div>
+
+                <b>
+                    Suspicious Keywords
+                </b>
+
+                <small id="keywordText">
+                    Checking URL patterns...
+                </small>
+
+            </div>
+
+            <strong id="keywordStatus">
+                CHECKING
+            </strong>
+
+        </div>
+
+
+        <!-- URL STRUCTURE -->
+
+        <div class="check">
+
+            <span id="urlIcon">✓</span>
+
+            <div>
+
+                <b>
+                    URL Structure
+                </b>
+
+                <small id="urlText">
+                    Checking URL structure...
+                </small>
+
+            </div>
+
+            <strong id="urlStatus">
+                CHECKING
+            </strong>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- REASONS -->
+
+    <div id="reasonsBox"
+         style="display:none; margin-top:25px;">
+
+        <h3>
+            ⚠ Detected Indicators
+        </h3>
+
+        <ul id="reasonsList"></ul>
+
+    </div>
+
+
+    <a href="index.html"
+       class="back-button">
+
+        ← Check Another Link
+
+    </a>
+
+
+</div>
+```
+
+</section>
+
+<footer>
+
+```
+<div class="footer-logo">
+    LINK<span>VERIFY</span>
+</div>
+
+<p class="copyright">
+    © 2026 LINKVERIFY.
+</p>
+```
+
+</footer>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const savedResult = localStorage.getItem("scanResult");
+
+    if (!savedResult) {
+        console.warn("No scan result found.");
+        return;
+    }
+
+    let data;
+
+    try {
+        data = JSON.parse(savedResult);
+    } catch (error) {
+        console.error("Unable to read scan result:", error);
+        return;
+    }
+
+    // Find existing elements without changing the page design
+    const get = id => document.getElementById(id);
+
+    const urlElement = get("analysisURL");
+    const badge = document.querySelector(".result-badge");
+    const scoreElement = document.querySelector(".score-circle strong");
+    const heading = document.querySelector(".score-section h3");
+    const description = document.querySelector(".score-section p");
+    const circle = document.querySelector(".score-circle");
+
+    // Display scanned URL
+    if (urlElement) {
+        urlElement.textContent = data.url || "Unknown URL";
+    }
+
+    // Normalize backend verdict
+    const verdict = String(
+        data.verdict || data.status || data.result || ""
+    ).trim().toUpperCase();
+
+    const isFake = [
+        "FAKE",
+        "KNOWN FAKE",
+        "DANGEROUS",
+        "MALICIOUS"
+    ].includes(verdict);
+
+    const isOfficial = [
+        "OFFICIAL",
+        "VERIFIED OFFICIAL",
+        "TRUSTED"
+    ].includes(verdict);
+
+    const isSuspicious = [
+        "SUSPICIOUS",
+        "POTENTIALLY UNSAFE"
+    ].includes(verdict);
+
+    // Prioritize explicit backend verdicts over scores
+    let safetyScore;
+    let riskScore;
+    let label;
+    let color;
+
+    if (isFake) {
+        safetyScore = 0;
+        riskScore = 100;
+        label = "FAKE WEBSITE";
+        color = "#ff5252";
+    } else if (isOfficial) {
+        safetyScore = 100;
+        riskScore = 0;
+        label = "OFFICIAL / VERIFIED";
+        color = "#37ff9b";
+    } else {
+        riskScore = Number(data.riskScore);
+
+        if (!Number.isFinite(riskScore)) {
+            riskScore = Number(data.score);
+        }
+
+        if (!Number.isFinite(riskScore)) {
+            riskScore = 50;
+        }
+
+        riskScore = Math.max(0, Math.min(100, riskScore));
+        safetyScore = 100 - riskScore;
+
+        if (isSuspicious || riskScore >= 60) {
+            label = "SUSPICIOUS WEBSITE";
+            color = "#ffb84d";
+        } else if (riskScore <= 30) {
+            label = "LOW RISK";
+            color = "#37ff9b";
+        } else {
+            label = "NEEDS VERIFICATION";
+            color = "#ffb84d";
+        }
+    }
+
+    // Update existing result badge
+    if (badge) {
+        badge.textContent = label;
+        badge.style.color = color;
+        badge.style.backgroundColor = color + "18";
+        badge.style.borderColor = color;
+    }
+
+    // Update score
+    if (scoreElement) {
+        scoreElement.textContent = safetyScore;
+        scoreElement.style.color = color;
+    }
+
+    // Update score circle without changing its dimensions/layout
+    if (circle) {
+        circle.style.borderColor = color;
+        circle.style.boxShadow = "0 0 30px " + color + "25";
+    }
+
+    // Update result heading and explanation
+    if (heading) {
+        if (isFake) {
+            heading.textContent = "This website is marked as fake";
+        } else if (isOfficial) {
+            heading.textContent = "Official verification reported";
+        } else if (label === "SUSPICIOUS WEBSITE") {
+            heading.textContent = "Potential security risk detected";
+        } else if (label === "LOW RISK") {
+            heading.textContent = "No major heuristic risks detected";
+        } else {
+            heading.textContent = "Further verification is recommended";
+        }
+    }
+
+    if (description) {
+        if (isFake) {
+            description.textContent =
+                "The backend marked this domain as fake. Do not share personal information, passwords, or payment details.";
+        } else if (isOfficial) {
+            description.textContent =
+                "The backend reports this domain as verified. Confirm the verification source before sharing sensitive information.";
+        } else {
+            description.textContent =
+                "This score is based on the available scan results and heuristic checks. A low-risk score does not guarantee that a website is safe.";
+        }
+    }
+
+    // Update existing check rows, if present
+    const checks = document.querySelectorAll(".check");
+
+    checks.forEach(function (row) {
+        const title = row.querySelector("b");
+        const detail = row.querySelector("small");
+        const status = row.querySelector("strong");
+
+        if (!title || !detail || !status) return;
+
+        const text = (
+            title.textContent + " " + detail.textContent
+        ).toLowerCase();
+
+        if (text.includes("domain")) {
+            if (isFake) {
+                status.textContent = "FAKE";
+                status.style.color = "#ff5252";
+                detail.textContent =
+                    "Backend reports this domain as fake.";
+            } else if (isOfficial) {
+                status.textContent = "VERIFIED";
+                status.style.color = "#37ff9b";
+            }
+        }
+
+        if (text.includes("https") || text.includes("ssl")) {
+            let hasHTTPS = false;
+
+            try {
+                hasHTTPS = new URL(data.url).protocol === "https:";
+            } catch (error) {
+                hasHTTPS = false;
+            }
+
+            status.textContent = hasHTTPS ? "ENABLED" : "NOT DETECTED";
+            status.style.color = hasHTTPS ? "#37ff9b" : "#ffb84d";
+
+            detail.textContent = hasHTTPS
+                ? "HTTPS encrypts the connection but does not prove the website is legitimate."
+                : "A secure HTTPS connection was not detected.";
+        }
+    });
+
+    console.log("Analysis displayed:", {
+        verdict: label,
+        safetyScore: safetyScore,
+        riskScore: riskScore
+    });
+
+});
+</script>
+
+
+
+</body>
+</html>
