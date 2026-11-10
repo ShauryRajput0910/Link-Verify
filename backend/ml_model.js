@@ -126,6 +126,18 @@ function predict(url) {
     if (featureMap.num_hyphens >= 3) {
         riskFactors.push(`Unusual hyphenation (${featureMap.num_hyphens} hyphens) common in typosquatted domains`);
     }
+    if (featureMap.brand_spoof === 1) {
+        riskFactors.push("High-value brand name detected in path/anchor fragment while destination host is unauthorized");
+    }
+    if (featureMap.has_fragment === 1) {
+        riskFactors.push("URL contains anchor fragment ('#') frequently abused to hide destination host");
+    }
+    if (featureMap.has_defanged === 1) {
+        riskFactors.push("Contains defanged syntax ('[.]' or 'hxxps') typically found in malware/phishing link distributions");
+    }
+    if (featureMap.deceptive_proto_domain === 1) {
+        riskFactors.push("Hostname mimics protocol or security keyword (e.g. hxxps, https-) to deceive users");
+    }
 
     return {
         available: true,

@@ -16,7 +16,22 @@ const SUSPICIOUS_KEYWORDS = [
     "login", "verify", "verification", "secure", "account", "banking",
     "update", "wallet", "claim", "prize", "winner", "reward", "free",
     "gift", "bonus", "confirm", "security", "support", "signin",
-    "password", "yojana", "rozgar", "kyc", "alert", "fund", "pay"
+    "password", "yojana", "rozgar", "kyc", "alert", "fund", "pay",
+    "whatsapp", "telegram", "airdrop", "otp", "deactivate"
+];
+
+const PROTECTED_BRANDS = [
+    { brand: "whatsapp", officialDomain: "whatsapp.com" },
+    { brand: "google", officialDomain: "google.com" },
+    { brand: "facebook", officialDomain: "facebook.com" },
+    { brand: "instagram", officialDomain: "instagram.com" },
+    { brand: "apple", officialDomain: "apple.com" },
+    { brand: "microsoft", officialDomain: "microsoft.com" },
+    { brand: "netflix", officialDomain: "netflix.com" },
+    { brand: "paypal", officialDomain: "paypal.com" },
+    { brand: "amazon", officialDomain: "amazon.com" },
+    { brand: "sbi", officialDomain: "onlinesbi.sbi" },
+    { brand: "paytm", officialDomain: "paytm.com" }
 ];
 
 function calculateEntropy(str) {
@@ -36,27 +51,36 @@ function calculateEntropy(str) {
 }
 
 function extractFeatures(urlStr) {
+    const raw = (urlStr || "").toLowerCase().trim();
+
     let parsed;
     try {
-        let full = urlStr.trim();
+        let full = raw;
+        // Handle defanged hxxp/hxxps
+        if (/^hxxps?[:\/]+/i.test(full)) {
+            full = full.replace(/^hxxps[:\/]+/i, "https://").replace(/^hxxp[:\/]+/i, "http://");
+        }
         if (!/^https?:\/\//i.test(full)) {
             full = "http://" + full;
         }
+        // Refang [.] for URL parsing
+        full = full.replace(/\[\.\]|\(\.\)|\{\.\}/g, ".");
         parsed = new URL(full);
     } catch (e) {
         // Fallback dummy URL
         parsed = {
-            hostname: urlStr.replace(/^https?:\/\//i, "").split("/")[0] || "",
+            hostname: raw.replace(/^https?:\/\//i, "").split(/[/?#]/)[0] || "",
             pathname: "",
             search: "",
+            hash: "",
             protocol: "http:"
         };
     }
 
-    const raw = urlStr.toLowerCase();
     const hostname = (parsed.hostname || "").toLowerCase();
     const path = (parsed.pathname || "").toLowerCase();
     const search = (parsed.search || "").toLowerCase();
+    const hash = (parsed.hash || "").toLowerCase();
 
     // 1. url_length
     const urlLength = raw.length;
@@ -69,7 +93,7 @@ function extractFeatures(urlStr) {
     const numSubdomains = Math.max(0, parts.length - 2);
 
     // 4. num_dots
-    const numDots = (raw.match(/\./g) || []).length;
+    const numDots = (raw.match(/\./g) || []).length + (raw.match(/\[\.\]/g) || []).length;
 
     // 5. num_hyphens
     const numHyphens = (raw.match(/-/g) || []).length;
@@ -102,14 +126,35 @@ function extractFeatures(urlStr) {
     // 13. query_length
     const queryLength = search.length;
 
-    // 14. has_special_chars (?, =, %, &, _)
-    const specialChars = (raw.match(/[?=%&_~]/g) || []).length;
+    // 14. has_special_chars (?, =, %, &, _, #, [, ])
+    const specialChars = (raw.match(/[?=%&_~#\[\]]/g) || []).length;
 
-    // 15. is_https
-    const isHttps = parsed.protocol === "https:" ? 1 : 0;
+    // 15. is_https (only 1 if original raw URL explicitly used https)
+    const isHttps = /^https:\/\//i.test(raw) ? 1 : 0;
 
     // 16. is_official_tld (.gov, .gov.in, .nic.in, .edu)
     const isOfficialTld = /\.(gov|nic|edu)(\.[a-z]{2})?$/.test(hostname) ? 1 : 0;
+
+    // 17. has_fragment (# in url - classic anchor spoofing trick)
+    const hasFragment = raw.includes("#") ? 1 : 0;
+
+    // 18. has_defanged_syntax ([.], (.), hxxp, hxxps)
+    const hasDefanged = (/\[\.\]|\(\.\)|\{\.\}|hxxp/i.test(raw)) ? 1 : 0;
+
+    // 19. brand_impersonation (brand name in path/hash when destination host is NOT that brand)
+    let brandSpoof = 0;
+    const afterHost = (path + search + hash + (raw.includes("#") ? raw.substring(raw.indexOf("#")) : "")).toLowerCase();
+    for (const pb of PROTECTED_BRANDS) {
+        if (afterHost.includes(pb.brand)) {
+            if (hostname !== pb.officialDomain && !hostname.endsWith("." + pb.officialDomain)) {
+                brandSpoof = 1;
+                break;
+            }
+        }
+    }
+
+    // 20. deceptive_proto_domain (hostname mimicking protocol: hxxps.com, https-login, etc.)
+    const deceptiveProtoDomain = /^(hxxps?|https?-|http-|ssl-)/i.test(hostname) ? 1 : 0;
 
     return [
         urlLength,
@@ -127,7 +172,11 @@ function extractFeatures(urlStr) {
         queryLength,
         specialChars,
         isHttps,
-        isOfficialTld
+        isOfficialTld,
+        hasFragment,
+        hasDefanged,
+        brandSpoof,
+        deceptiveProtoDomain
     ];
 }
 
@@ -147,12 +196,16 @@ const FEATURE_NAMES = [
     "query_length",
     "special_chars",
     "is_https",
-    "is_official_tld"
+    "is_official_tld",
+    "has_fragment",
+    "has_defanged",
+    "brand_spoof",
+    "deceptive_proto_domain"
 ];
 
 // ==========================================
 // 2. TRAINING DATASET (CURATED BENCHMARK)
-// 1 = Phishing / Scam / Malicious
+// 1 = Phishing / Scam / Malicious / Deceptive
 // 0 = Legitimate / Safe / Official
 // ==========================================
 
@@ -173,6 +226,9 @@ const DATASET = [
     { url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", label: 0 },
     { url: "https://youtube.com", label: 0 },
     { url: "https://www.netflix.com/browse", label: 0 },
+    { url: "https://web.whatsapp.com", label: 0 },
+    { url: "https://www.whatsapp.com/download", label: 0 },
+    { url: "https://whatsapp.com/security", label: 0 },
     { url: "https://pmvbry.labour.gov.in", label: 0 },
     { url: "https://pmvbry.epfindia.gov.in", label: 0 },
     { url: "https://www.india.gov.in", label: 0 },
@@ -209,7 +265,16 @@ const DATASET = [
     { url: "https://slack.com", label: 0 },
     { url: "https://zoom.us", label: 0 },
 
-    // --- Phishing / Scam / Malicious Sites (label = 1) ---
+    // --- Phishing / Scam / Anchor Deception / Malicious Sites (label = 1) ---
+    { url: "hxxps.com/w#b.whatsapp[.]com/", label: 1 },
+    { url: "http://hxxps.com/w#b.whatsapp[.]com/", label: 1 },
+    { url: "https://hxxps.com/w#b.whatsapp.com/", label: 1 },
+    { url: "http://attacker.com/page#login.whatsapp.com", label: 1 },
+    { url: "http://fake-portal.org/index.html#https://web.whatsapp.com", label: 1 },
+    { url: "http://evil-server.net/#paypal.com/verify-account", label: 1 },
+    { url: "http://scam-domain.xyz/#google.com/signin", label: 1 },
+    { url: "hxxp://malicious-domain[.]com/login", label: 1 },
+    { url: "hxxps://192.168.1.1/admin-panel", label: 1 },
     { url: "http://viksitbharatrozgaryojana.org", label: 1 },
     { url: "http://pmviksitbharatrozgaryojana.com", label: 1 },
     { url: "http://192.168.1.105/bank-login/verification.php", label: 1 },
@@ -272,7 +337,6 @@ function sigmoid(z) {
     return 1 / (1 + Math.exp(-z));
 }
 
-// Compute binary cross-entropy loss with L2 penalty
 function computeLoss(X, y, weights, bias, lambda) {
     const m = y.length;
     let totalLoss = 0;
@@ -284,7 +348,6 @@ function computeLoss(X, y, weights, bias, lambda) {
         const p = Math.max(1e-15, Math.min(1 - 1e-15, sigmoid(z)));
         totalLoss += - (y[i] * Math.log(p) + (1 - y[i]) * Math.log(1 - p));
     }
-    // L2 regularization
     let l2 = 0;
     for (let j = 0; j < weights.length; j++) {
         l2 += weights[j] * weights[j];
@@ -299,14 +362,12 @@ function computeLoss(X, y, weights, bias, lambda) {
 function trainModel() {
     console.log("⚡ [ML Pipeline] Starting ML training on " + DATASET.length + " labeled samples...");
 
-    // Extract raw feature vectors
     const X_raw = DATASET.map(d => extractFeatures(d.url));
     const y = DATASET.map(d => d.label);
 
     const numSamples = X_raw.length;
     const numFeatures = FEATURE_NAMES.length;
 
-    // Standardize features: calculate mean and std dev
     const means = new Array(numFeatures).fill(0);
     const stdDevs = new Array(numFeatures).fill(0);
 
@@ -321,22 +382,19 @@ function trainModel() {
         for (let i = 0; i < numSamples; i++) {
             varSum += Math.pow(X_raw[i][j] - means[j], 2);
         }
-        stdDevs[j] = Math.sqrt(varSum / numSamples) || 1; // avoid divide by zero
+        stdDevs[j] = Math.sqrt(varSum / numSamples) || 1;
     }
 
-    // Normalized feature matrix
     const X = X_raw.map(row =>
         row.map((val, j) => (val - means[j]) / stdDevs[j])
     );
 
-    // Initialize weights and bias
     let weights = new Array(numFeatures).fill(0).map(() => (Math.random() - 0.5) * 0.1);
     let bias = 0;
 
-    // Hyperparameters
     const learningRate = 0.08;
     const epochs = 2000;
-    const lambda = 0.01; // L2 regularizer
+    const lambda = 0.01;
 
     for (let epoch = 1; epoch <= epochs; epoch++) {
         const dW = new Array(numFeatures).fill(0);
@@ -355,7 +413,6 @@ function trainModel() {
             dB += error;
         }
 
-        // Apply gradients with L2 regularization
         for (let j = 0; j < numFeatures; j++) {
             weights[j] -= learningRate * ((dW[j] / numSamples) + (lambda / numSamples) * weights[j]);
         }
@@ -367,7 +424,6 @@ function trainModel() {
         }
     }
 
-    // Evaluate metrics
     let correct = 0;
     let truePos = 0;
     let falsePos = 0;
@@ -402,7 +458,6 @@ function trainModel() {
     console.log(`  F1-Score:  ${f1.toFixed(2)}%`);
     console.log("==========================================");
 
-    // Prepare model payload
     const modelArtifact = {
         modelType: "Supervised Logistic Regression Classifier",
         framework: "LinkVerify ML Engine (L2 Regularized)",
@@ -443,6 +498,6 @@ module.exports = {
     extractFeatures,
     calculateEntropy,
     FEATURE_NAMES,
-    SUSPICIOUS_KEYWORDS
+    SUSPICIOUS_KEYWORDS,
+    PROTECTED_BRANDS
 };
-

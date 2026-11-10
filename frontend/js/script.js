@@ -50,9 +50,19 @@ async function verifyLink() {
         // Save backend result
         localStorage.setItem("scanResult", JSON.stringify(data));
 
-        result.style.color = "#00ff9d";
-        result.style.borderColor = "rgba(0,255,157,0.4)";
-        result.style.background = "rgba(0,255,157,0.08)";
+        const isBad = ["FAKE", "DANGEROUS", "MALICIOUS"].includes(data.verdict);
+        const isSusp = ["SUSPICIOUS", "UNVERIFIED"].includes(data.verdict);
+
+        let verdictColor = "#00ff9d";
+        if (isBad) {
+            verdictColor = "#ff3366";
+        } else if (isSusp) {
+            verdictColor = "#ffb800";
+        }
+
+        result.style.color = verdictColor;
+        result.style.borderColor = isBad ? "rgba(255,51,102,0.4)" : (isSusp ? "rgba(255,184,0,0.4)" : "rgba(0,255,157,0.4)");
+        result.style.background = isBad ? "rgba(255,51,102,0.08)" : (isSusp ? "rgba(255,184,0,0.08)" : "rgba(0,255,157,0.08)");
 
         let dymHTML = "";
         if (data.didYouMean) {
@@ -64,7 +74,7 @@ async function verifyLink() {
             fixHTML = `<div style="margin-top:4px; color:#94a3b8; font-size:11px;">⚡ Auto-fixed: ${data.fixMessages.join(" ")}</div>`;
         }
 
-        result.innerHTML = `✓ <strong>ANALYSIS COMPLETE:</strong> Verdict: <span style="font-weight:800;letter-spacing:1px;color:${data.verdict === 'FAKE' ? '#ff3366' : '#00ff9d'}">${data.verdict}</span>.${dymHTML}${fixHTML}<div style="margin-top:6px;font-size:11px;color:#94a3b8;">Opening Security Analysis Console...</div>`;
+        result.innerHTML = `✓ <strong>ANALYSIS COMPLETE:</strong> Verdict: <span style="font-weight:800;letter-spacing:1px;color:${verdictColor}">${data.verdict}</span>.${dymHTML}${fixHTML}<div style="margin-top:6px;font-size:11px;color:#94a3b8;">Opening Security Analysis Console...</div>`;
 
         // Open analysis page after brief delay
         setTimeout(function () {

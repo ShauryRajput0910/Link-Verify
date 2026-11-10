@@ -192,10 +192,81 @@ async function analyzeURL(input) {
         // 5. COMPOSITE HEURISTIC & ML SCORING
         // ==========================================
         let heuristicScore = 100;
+        let isCriticalPhishing = false;
 
+        // Protocol Check: Only grant full HTTPS safety points if original input explicitly used https
         if (parsedURL.protocol !== "https:") {
             heuristicScore -= 20;
-            reasons.push("HTTPS is not enabled (missing TLS encryption).");
+            reasons.push("HTTPS is not enabled (missing TLS cryptographic encryption).");
+        } else if (!normalized.originalHadHttps) {
+            heuristicScore -= 20;
+            reasons.push("HTTPS was missing in the original input (auto-filled for scanning purposes only).");
+        }
+
+        // Defanged / Quarantine notation
+        if (normalized.isDefanged) {
+            heuristicScore -= 35;
+            reasons.push(
+                "🚨 Quarantined / Defanged Syntax: Link contains '[.]' or 'hxxps' notation commonly used to distribute or report malware/phishing."
+            );
+        }
+
+        // Deceptive protocol hostname (e.g. hxxps.com, https-login.com)
+        if (/^(hxxps?|https?-|http-|ssl-|secure-login-|web-login-)/i.test(hostname)) {
+            heuristicScore -= 40;
+            reasons.push(
+                `🚨 Deceptive Hostname: Domain '${hostname}' mimics a security/protocol prefix to mislead users into believing it is a secure connection.`
+            );
+        }
+
+        // Protected Brands List for Phishing & Fragment Deception Detection
+        const PROTECTED_BRANDS = [
+            { brand: "whatsapp", officialDomain: "whatsapp.com" },
+            { brand: "google", officialDomain: "google.com" },
+            { brand: "facebook", officialDomain: "facebook.com" },
+            { brand: "instagram", officialDomain: "instagram.com" },
+            { brand: "apple", officialDomain: "apple.com" },
+            { brand: "microsoft", officialDomain: "microsoft.com" },
+            { brand: "netflix", officialDomain: "netflix.com" },
+            { brand: "paypal", officialDomain: "paypal.com" },
+            { brand: "amazon", officialDomain: "amazon.com" },
+            { brand: "sbi", officialDomain: "onlinesbi.sbi" },
+            { brand: "hdfc", officialDomain: "hdfcbank.com" },
+            { brand: "icici", officialDomain: "icicibank.com" },
+            { brand: "paytm", officialDomain: "paytm.com" },
+            { brand: "phonepe", officialDomain: "phonepe.com" },
+            { brand: "telegram", officialDomain: "telegram.org" }
+        ];
+
+        // Critical URL Fragment (#) Deception / Anchor Spoofing
+        if (parsedURL.hash) {
+            const rawHash = parsedURL.hash.toLowerCase();
+            for (const pb of PROTECTED_BRANDS) {
+                if (rawHash.includes(pb.brand)) {
+                    if (!matchesDomain(hostname, pb.officialDomain)) {
+                        heuristicScore -= 80;
+                        isCriticalPhishing = true;
+                        reasons.push(
+                            `🚨 URL Fragment Deception Attack: Link embeds '${pb.brand}' in the anchor hash ('${parsedURL.hash}'), but destination host is '${hostname}'. The browser will NOT load ${pb.officialDomain}!`
+                        );
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Brand Lure in Path or Search Query
+        const fullPathAndSearch = (parsedURL.pathname + parsedURL.search).toLowerCase();
+        for (const pb of PROTECTED_BRANDS) {
+            if (fullPathAndSearch.includes(pb.brand)) {
+                if (!matchesDomain(hostname, pb.officialDomain)) {
+                    heuristicScore -= 45;
+                    reasons.push(
+                        `⚠ Deceptive Path / Brand Lure: The URL path includes '${pb.brand}', but destination domain '${hostname}' is NOT affiliated with ${pb.officialDomain}.`
+                    );
+                    break;
+                }
+            }
         }
 
         // Typosquatting penalty if user typed an impostor domain (e.g. amazn.com)
@@ -211,7 +282,7 @@ async function analyzeURL(input) {
             "free", "reward", "prize", "wallet", "bonus"
         ];
 
-        const searchableURL = (hostname + parsedURL.pathname).toLowerCase();
+        const searchableURL = (hostname + parsedURL.pathname + parsedURL.hash).toLowerCase();
         const matchedWords = suspiciousWords.filter(word =>
             searchableURL.includes(word)
         );
@@ -250,22 +321,26 @@ async function analyzeURL(input) {
         const mlSafetyScore = mlAnalysis.available ? mlAnalysis.safetyProbability : 50;
         let compositeSafetyScore = Math.round(heuristicScore * 0.40 + mlSafetyScore * 0.60);
 
-        // Cap score if ML detects strong phishing pattern
-        if (mlAnalysis.available && mlAnalysis.phishingProbability >= 70) {
-            compositeSafetyScore = Math.min(compositeSafetyScore, 20);
+        // Cap score if ML detects strong phishing pattern or critical anchor deception
+        if (isCriticalPhishing) {
+            compositeSafetyScore = Math.min(compositeSafetyScore, 5);
+        } else if (mlAnalysis.available && mlAnalysis.phishingProbability >= 70) {
+            compositeSafetyScore = Math.min(compositeSafetyScore, 15);
             reasons.push(`🤖 ML Neural Classifier: High Phishing Probability (${mlAnalysis.phishingProbability}%).`);
         }
 
         // Deduct points if domain is unresolvable
         if (threatIntel.status === "UNRESOLVED_DOMAIN") {
-            compositeSafetyScore = Math.max(10, compositeSafetyScore - 25);
+            compositeSafetyScore = Math.max(0, compositeSafetyScore - 25);
             reasons.push("⚠ Host Integrity: Domain does not resolve in public DNS (disposable or down host).");
         }
 
         compositeSafetyScore = Math.max(0, Math.min(compositeSafetyScore, 100));
 
         let verdict = "UNVERIFIED";
-        if (compositeSafetyScore <= 35 || (mlAnalysis.available && mlAnalysis.verdict === "PHISHING")) {
+        if (isCriticalPhishing || compositeSafetyScore <= 20) {
+            verdict = "DANGEROUS";
+        } else if (compositeSafetyScore <= 45 || (mlAnalysis.available && mlAnalysis.verdict === "PHISHING")) {
             verdict = "SUSPICIOUS";
         } else if (compositeSafetyScore >= 75 && (!mlAnalysis.available || mlAnalysis.verdict === "SAFE")) {
             verdict = "LOW RISK";

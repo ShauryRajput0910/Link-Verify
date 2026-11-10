@@ -454,9 +454,9 @@
             let color;
 
             if (isFake) {
-                safetyScore = 0;
-                riskScore = 100;
-                label = "FAKE WEBSITE";
+                safetyScore = Number(data.safetyScore ?? 0);
+                riskScore = 100 - safetyScore;
+                label = verdict === "DANGEROUS" ? "DANGEROUS / MALICIOUS" : "FAKE WEBSITE";
                 color = "#ff5252";
             } else if (isOfficial) {
                 safetyScore = 100;
@@ -511,7 +511,9 @@
 
             // Update result heading and explanation
             if (heading) {
-                if (isFake) {
+                if (verdict === "DANGEROUS") {
+                    heading.textContent = "High-risk deceptive phishing link detected";
+                } else if (isFake) {
                     heading.textContent = "This website is marked as fake";
                 } else if (isOfficial) {
                     heading.textContent = "Official verification reported";
@@ -525,7 +527,10 @@
             }
 
             if (description) {
-                if (isFake) {
+                if (verdict === "DANGEROUS") {
+                    description.textContent =
+                        "Severe security anomalies, brand spoofing, or defanged malware patterns detected. Do not click or interact with this link.";
+                } else if (isFake) {
                     description.textContent =
                         "The backend marked this domain as fake. Do not share personal information, passwords, or payment details.";
                 } else if (isOfficial) {

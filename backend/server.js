@@ -67,8 +67,8 @@ app.post("/api/scan", async (req, res) => {
     let verdict = analysis.verdict;
     let riskScore;
 
-    if (verdict === "FAKE" || verdict === "Known Fake") {
-        verdict = "FAKE";
+    if (verdict === "FAKE" || verdict === "Known Fake" || verdict === "DANGEROUS") {
+        verdict = verdict === "DANGEROUS" ? "DANGEROUS" : "FAKE";
         riskScore = 100;
     } else if (verdict === "VERIFIED OFFICIAL" ||
         verdict === "Verified Official") {

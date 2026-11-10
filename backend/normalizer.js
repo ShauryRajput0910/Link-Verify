@@ -150,7 +150,12 @@ function cleanAndNormalizeURL(rawInput) {
             hostname: "",
             autoFixed: false,
             fixMessages: [],
-            didYouMean: null
+            didYouMean: null,
+            isDefanged: false,
+            originalHadHttps: false,
+            hadExplicitProtocol: false,
+            hasFragment: false,
+            rawFragment: ""
         };
     }
 
@@ -158,6 +163,39 @@ function cleanAndNormalizeURL(rawInput) {
     const fixMessages = [];
     let autoFixed = false;
     let didYouMean = null;
+
+    // Track original protocol presence before any fixes
+    const originalHadHttps = /^https:\/\//i.test(input);
+    const originalHadHttp = /^http:\/\//i.test(input);
+    const hadExplicitProtocol = originalHadHttps || originalHadHttp;
+
+    // 0. Detect Defanged / Obfuscated cyber threat notation
+    const hasDefangedDots = /\[\.\]|\(\.\)|\{\.\}|\[dot\]/i.test(input);
+    const hasDefangedColons = /\[:\]|\(:\)|\[colon\]/i.test(input);
+    const hasHxxpProto = /^hxxps?[:\/]+/i.test(input);
+    const isDefanged = hasDefangedDots || hasDefangedColons || hasHxxpProto;
+
+    if (hasDefangedDots) {
+        input = input.replace(/\[\.\]|\(\.\)|\{\.\}|\[dot\]/gi, ".");
+        autoFixed = true;
+        fixMessages.push("Refanged defanged dots '[.]' to '.'.");
+    }
+
+    if (hasDefangedColons) {
+        input = input.replace(/\[:\]|\(:\)|\[colon\]/gi, ":");
+        autoFixed = true;
+        fixMessages.push("Refanged defanged colons '[:]'.");
+    }
+
+    if (hasHxxpProto) {
+        if (/^hxxps[:\/]+/i.test(input)) {
+            input = input.replace(/^hxxps[:\/]+/i, "https://");
+        } else {
+            input = input.replace(/^hxxp[:\/]+/i, "http://");
+        }
+        autoFixed = true;
+        fixMessages.push("Refanged 'hxxp' malware/quarantine protocol.");
+    }
 
     // 1. Strip surrounding quotes, brackets, angle brackets, backticks
     const cleanedQuotes = input.replace(/^[<"`'\[\(]+|[>"'`\]\)]+$/g, "");
@@ -183,16 +221,24 @@ function cleanAndNormalizeURL(rawInput) {
         body = input.substring(match.length);
     } else {
         autoFixed = true;
-        fixMessages.push("Added default https:// protocol.");
+        fixMessages.push("Added default https:// protocol (unverified).");
     }
 
     // Strip leading slashes from body (e.g. from https:///example.com)
     body = body.replace(/^\/+/, "");
 
-    // Separate domain from path/query
+    // Separate domain from path/query/hash
     let slashIdx = body.indexOf("/");
-    let domainPart = slashIdx === -1 ? body : body.substring(0, slashIdx);
-    let pathPart = slashIdx === -1 ? "" : body.substring(slashIdx);
+    let hashIdxBeforeSlash = body.indexOf("#");
+
+    // If '#' appears before any '/', split at '#'
+    let splitIdx = slashIdx;
+    if (hashIdxBeforeSlash !== -1 && (slashIdx === -1 || hashIdxBeforeSlash < slashIdx)) {
+        splitIdx = hashIdxBeforeSlash;
+    }
+
+    let domainPart = splitIdx === -1 ? body : body.substring(0, splitIdx);
+    let pathPart = splitIdx === -1 ? "" : body.substring(splitIdx);
 
     // 3. Remove spaces inside domain
     if (/\s+/.test(domainPart)) {
@@ -259,18 +305,26 @@ function cleanAndNormalizeURL(rawInput) {
         }
     }
 
-    // Clean path (trim duplicate slashes at beginning)
-    if (pathPart) {
+    // Clean path (trim duplicate slashes at beginning if it starts with slash)
+    if (pathPart && pathPart.startsWith("/")) {
         pathPart = "/" + pathPart.replace(/^\/+/, "");
     }
 
     const cleanedURL = `${protocol}${domainPart}${pathPart}`;
+    const hasFragment = cleanedURL.includes("#");
+    const rawFragment = hasFragment ? cleanedURL.substring(cleanedURL.indexOf("#")) : "";
+
     return {
         cleanedURL,
         hostname: domainPart.toLowerCase(),
         autoFixed,
         fixMessages,
-        didYouMean
+        didYouMean,
+        isDefanged,
+        originalHadHttps,
+        hadExplicitProtocol,
+        hasFragment,
+        rawFragment
     };
 }
 
