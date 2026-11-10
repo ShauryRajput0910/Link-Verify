@@ -71,7 +71,7 @@ app.post("/api/scan", async (req, res) => {
         verdict = "FAKE";
         riskScore = 100;
     } else if (verdict === "VERIFIED OFFICIAL" ||
-               verdict === "Verified Official") {
+        verdict === "Verified Official") {
         verdict = "VERIFIED OFFICIAL";
         riskScore = 0;
     } else if (verdict === "Invalid URL") {
