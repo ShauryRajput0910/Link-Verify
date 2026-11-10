@@ -2,6 +2,7 @@
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2");
+const path = require("path");
 require("dotenv").config();
 
 const analyzeURL = require("./analyzer");
@@ -15,6 +16,9 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static frontend files
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 // ==========================================
 // MYSQL CONNECTION
@@ -37,10 +41,10 @@ db.connect((err) => {
 });
 
 // ==========================================
-// HOME ROUTE
+// HEALTH ROUTE
 // ==========================================
 
-app.get("/", (req, res) => {
+app.get("/api/health", (req, res) => {
     res.send("FraudSense / LinkVerify Backend is Running!");
 });
 
@@ -115,13 +119,7 @@ app.post("/api/scan", (req, res) => {
         [cleanURL, riskScore, verdict],
         (err, result) => {
             if (err) {
-                console.error("Database insert error:", err.message);
-
-                return res.status(500).json({
-                    success: false,
-                    message: "Database error. Check the url_scans table.",
-                    error: err.message
-                });
+                console.warn("Database notice (running without DB persistence):", err.message);
             }
 
             // ======================================
@@ -130,7 +128,7 @@ app.post("/api/scan", (req, res) => {
 
             return res.json({
                 success: true,
-                id: result.insertId,
+                id: result ? result.insertId : null,
                 url: cleanURL,
                 riskScore,
                 safetyScore: analysis.score,
@@ -157,12 +155,11 @@ app.get("/api/scans", (req, res) => {
 
     db.query(sql, (err, results) => {
         if (err) {
-            console.error("Database fetch error:", err.message);
+            console.warn("Database notice:", err.message);
 
-            return res.status(500).json({
-                success: false,
-                message: "Database error",
-                error: err.message
+            return res.json({
+                success: true,
+                scans: []
             });
         }
 
